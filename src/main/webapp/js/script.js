@@ -158,14 +158,8 @@ function handleFormSubmit(form) {
     formData.append('asunto', asunto);
     formData.append('mensaje', mensaje);
 
-    // Construir URL correcta del API
-    const currentPath = window.location.pathname;
-    let apiUrl = '/api/contact';
-    
-    // Si estamos en /rolfing o subsecuente, usar la ruta con /rolfing
-    if (currentPath.includes('/rolfing')) {
-        apiUrl = '/rolfing/api/contact';
-    }
+    // URL del API (ahora la app está en raíz /)
+    const apiUrl = '/api/contact';
     
     console.log('📤 Enviando a:', apiUrl);
     console.log('📍 Ubicación actual:', window.location.href);

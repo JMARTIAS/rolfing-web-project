@@ -33,7 +33,7 @@ public class JettyServer {
         server.addConnector(connector);
 
         WebAppContext webapp = new WebAppContext();
-        webapp.setContextPath("/rolfing");
+        webapp.setContextPath("/");
         webapp.setResourceBase(webappPath);
         webapp.setDescriptor(webXmlPath);
         webapp.setParentLoaderPriority(true);
@@ -44,7 +44,7 @@ public class JettyServer {
 
         System.out.println("\n" + "=".repeat(60));
         System.out.println("  SERVIDOR LISTO");
-        System.out.println("  Accede a: http://localhost:" + port + "/rolfing");
+        System.out.println("  Accede a: http://localhost:" + port + "/");
         System.out.println("  Ctrl+C para detener");
         System.out.println("=".repeat(60) + "\n");
         System.out.flush();
