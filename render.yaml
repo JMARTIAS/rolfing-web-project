@@ -1,13 +1,13 @@
 services:
   - type: web
     name: rolfing-web
-    runtime: java11
+    runtime: docker
     plan: free
-    buildCommand: ./gradlew clean build
-    startCommand: java -cp build/libs/rolfing.war com.rolfing.server.JettyServer
+    dockerfile: ./Dockerfile
+    dockerCommand: ""
     envVars:
       - key: PORT
-        value: 8080
+        value: "8080"
       - key: MAIL_SMTP_HOST
         value: smtp.gmail.com
       - key: MAIL_SMTP_PORT
