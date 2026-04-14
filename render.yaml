@@ -8,3 +8,14 @@ services:
     envVars:
       - key: PORT
         value: 8080
+      - key: MAIL_SMTP_HOST
+        value: smtp.gmail.com
+      - key: MAIL_SMTP_PORT
+        value: "587"
+      # IMPORTANTE: Configura estas dos variables en el dashboard de Render:
+      # Environment > Add Environment Variable
+      # No las pongas aquí para evitar exponer credenciales en el repositorio
+      # - key: MAIL_SMTP_USER
+      #   value: tu-email@gmail.com
+      # - key: MAIL_SMTP_PASSWORD
+      #   value: xxxx xxxx xxxx xxxx   (contraseña de aplicación de Google)

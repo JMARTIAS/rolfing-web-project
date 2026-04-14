@@ -63,9 +63,26 @@ public class ConfigManager {
 
     
     public boolean getBoolean(String propKey, boolean defaultValue) {
+        // Convierte la propKey a formato de variable de entorno (puntos -> guiones bajos, mayúsculas)
+        String envKey = propKey.replace(".", "_").toUpperCase();
+        String envValue = System.getenv(envKey);
+        if (envValue != null && !envValue.isEmpty()) {
+            return Boolean.parseBoolean(envValue);
+        }
         String value = properties.getProperty(propKey);
         if (value != null && !value.isEmpty()) {
             return Boolean.parseBoolean(value);
+        }
+        return defaultValue;
+    }
+    
+    /**
+     * Obtiene valor de propiedad (sin variable de entorno separada)
+     */
+    public String get(String propKey, String defaultValue) {
+        String value = properties.getProperty(propKey);
+        if (value != null && !value.isEmpty()) {
+            return value;
         }
         return defaultValue;
     }

@@ -82,8 +82,11 @@ public class EmailService {
             mailProps.put("mail.smtp.auth", "true");
             mailProps.put("mail.smtp.starttls.enable", "true");
             mailProps.put("mail.smtp.starttls.required", "true");
-            mailProps.put("mail.smtp.connectiontimeout", "5000");
-            mailProps.put("mail.smtp.timeout", "5000");
+            mailProps.put("mail.smtp.ssl.trust", smtpHost);
+            mailProps.put("mail.smtp.ssl.protocols", "TLSv1.2");
+            mailProps.put("mail.smtp.connectiontimeout", "15000");
+            mailProps.put("mail.smtp.timeout", "15000");
+            mailProps.put("mail.smtp.writetimeout", "15000");
             
             System.out.println("🔗 Creando sesión SMTP...");
             Session session = Session.getInstance(mailProps, new Authenticator() {
@@ -107,21 +110,27 @@ public class EmailService {
             return true;
 
         } catch (AuthenticationFailedException e) {
-            System.err.println("❌ ERROR DE AUTENTICACIÓN");
+            System.err.println("❌ ERROR DE AUTENTICACIÓN SMTP");
             System.err.println("   Usuario: " + maskEmail(smtpUser));
-            System.err.println("   Posible causa: Usuario/Contraseña incorrectos");
+            System.err.println("   Causa: Usuario/Contraseña de aplicación incorrectos");
+            System.err.println("   Solución: Verifica la contraseña de aplicación de Google en myaccount.google.com/apppasswords");
+            e.printStackTrace(System.err);
             return false;
         } catch (MessagingException e) {
-            System.err.println("❌ ERROR AL ENVIAR: " + e.getMessage());
-            if (e.getMessage().contains("Connection refused")) {
+            String msg = e.getMessage() != null ? e.getMessage() : "sin detalle";
+            System.err.println("❌ ERROR AL ENVIAR SMTP: " + msg);
+            if (msg.contains("Connection refused") || msg.contains("connect timed out") || msg.contains("ConnectException")) {
                 System.err.println("   Causa: No se puede conectar a " + smtpHost + ":" + smtpPort);
-            } else if (e.getMessage().contains("Invalid")) {
+                System.err.println("   Solución: Verifica que el puerto 587 no esté bloqueado en Render");
+            } else if (msg.contains("Invalid") || msg.contains("invalid")) {
                 System.err.println("   Causa: Email inválido o datos incorrectos");
+            } else if (msg.contains("timeout") || msg.contains("Timeout")) {
+                System.err.println("   Causa: Tiempo de espera agotado al conectar con " + smtpHost);
             }
             e.printStackTrace(System.err);
             return false;
         } catch (Exception e) {
-            System.err.println("❌ ERROR INESPERADO: " + e.getMessage());
+            System.err.println("❌ ERROR INESPERADO al enviar email: " + e.getClass().getName() + " - " + e.getMessage());
             e.printStackTrace(System.err);
             return false;
         }
