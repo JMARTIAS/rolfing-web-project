@@ -101,25 +101,28 @@ public class ContactServlet extends HttpServlet {
             // Enviar emails
             System.out.println("📤 Intentando enviar emails...");
             boolean emailSentToAdmin = emailService.sendContactEmail(nombre, email, telefono, asunto, mensaje, adminEmail);
-            System.out.println("   → Correo al admin: " + (emailSentToAdmin ? "✅ ENVIADO" : "❌ FALLÓ"));
-            
-            boolean emailSentToUser = emailService.sendConfirmationEmail(email, nombre);
-            System.out.println("   → Confirmación al usuario: " + (emailSentToUser ? "✅ ENVIADA" : "❌ FALLÓ"));
+            String adminError = emailService.getLastError();
+            System.out.println("   → Correo al admin: " + (emailSentToAdmin ? "✅ ENVIADO" : "❌ FALLÓ - " + adminError));
 
-            // Responder con éxito
+            boolean emailSentToUser = false;
+            String userError = "";
+            if (emailSentToAdmin) {
+                emailSentToUser = emailService.sendConfirmationEmail(email, nombre);
+                userError = emailService.getLastError();
+                System.out.println("   → Confirmación al usuario: " + (emailSentToUser ? "✅ ENVIADA" : "❌ FALLÓ - " + userError));
+            }
+
+            // Responder - incluir el error específico si hubo fallo
             response.setStatus(HttpServletResponse.SC_OK);
             try (PrintWriter out = response.getWriter()) {
-                StringBuilder response_msg = new StringBuilder("{\"success\": true, \"message\": \"Mensaje recibido exitosamente.");
-                
-                if (!emailSentToAdmin && !emailSentToUser) {
-                    response_msg.append(" (Nota: Los emails no pudieron ser enviados, pero tu mensaje fue registrado.)\"}");
-                } else if (!emailSentToAdmin || !emailSentToUser) {
-                    response_msg.append(" (Parcial: Algunos emails fallaron, revisa los logs.)\"}");
+                if (emailSentToAdmin) {
+                    out.println("{\"success\": true, \"message\": \"¡Mensaje enviado exitosamente! Recibirás una confirmación en tu correo.\"}");
                 } else {
-                    response_msg.append("\"}");
+                    // Devolver el error exacto para poder diagnosticarlo
+                    String errorDetail = adminError.replace("\"", "'");
+                    System.err.println("🔴 FALLO SMTP - Detalle: " + errorDetail);
+                    out.println("{\"success\": false, \"message\": \"Error al enviar: " + errorDetail + "\"}");
                 }
-                
-                out.println(response_msg);
             }
 
         } catch (Exception e) {

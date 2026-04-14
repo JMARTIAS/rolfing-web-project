@@ -7,15 +7,16 @@ import javax.mail.internet.MimeMessage;
 import java.util.Properties;
 
 /**
- * Servicio para enviar correos electrónicos vía SMTP
+ * Servicio para enviar correos electrónicos vía SMTP.
+ * Intenta primero con puerto 465 (SSL) y luego con 587 (STARTTLS) como fallback.
  */
 public class EmailService {
-    
+
     private String smtpHost;
-    private String smtpPort;
     private String smtpUser;
     private String smtpPassword;
     private boolean emailEnabled;
+    private String lastError = "";
     private final ConfigManager config;
 
     public EmailService() {
@@ -24,219 +25,192 @@ public class EmailService {
     }
 
     private void loadConfiguration() {
-        // Obtiene configuración desde variables de entorno o config.properties
-        this.smtpHost = config.get("MAIL_SMTP_HOST", "email.smtp.host", "smtp.gmail.com");
-        this.smtpPort = config.get("MAIL_SMTP_PORT", "email.smtp.port", "587");
-        this.smtpUser = config.get("MAIL_SMTP_USER", "email.smtp.user", "");
+        this.smtpHost     = config.get("MAIL_SMTP_HOST",     "email.smtp.host",     "smtp.gmail.com");
+        this.smtpUser     = config.get("MAIL_SMTP_USER",     "email.smtp.user",     "");
         this.smtpPassword = config.get("MAIL_SMTP_PASSWORD", "email.smtp.password", "");
         this.emailEnabled = config.getBoolean("email.enabled", true);
-        
-        System.out.println("\n📋 DEBUG: Fuentes de configuración");
-        System.out.println("   MAIL_SMTP_USER env: " + (System.getenv("MAIL_SMTP_USER") != null ? "✅ SET" : "❌ NOT SET"));
-        System.out.println("   MAIL_SMTP_PASSWORD env: " + (System.getenv("MAIL_SMTP_PASSWORD") != null ? "✅ SET" : "❌ NOT SET"));
-        
-        System.out.println("\n╔════════════════════════════════════════════════════════╗");
-        System.out.println("║          CONFIGURACIÓN DE EMAIL CARGADA                  ║");
-        System.out.println("╠════════════════════════════════════════════════════════╣");
-        System.out.println("║ Habilitado:          " + formatBoolean(emailEnabled));
-        System.out.println("║ Host SMTP:           " + smtpHost);
-        System.out.println("║ Puerto SMTP:         " + smtpPort);
-        System.out.println("║ Usuario SMTP:        " + maskEmail(smtpUser));
-        System.out.println("║ Contraseña config.:  " + (smtpPassword != null && !smtpPassword.isEmpty() ? "✅ SÍ" : "❌ NO"));
-        System.out.println("╚════════════════════════════════════════════════════════╝\n");
-        
-        // Validación
+
+        System.out.println("\n╔════════════════════════════════════════╗");
+        System.out.println("║   CONFIGURACIÓN DE EMAIL CARGADA       ║");
+        System.out.println("╠════════════════════════════════════════╣");
+        System.out.println("║ Habilitado: " + (emailEnabled ? "✅ SÍ" : "❌ NO"));
+        System.out.println("║ SMTP Host:  " + smtpHost);
+        System.out.println("║ Usuario:    " + maskEmail(smtpUser));
+        System.out.println("║ Password:   " + (smtpPassword != null && !smtpPassword.isEmpty() ? "✅ configurada" : "❌ vacía"));
+        System.out.println("║ Env USER:   " + (System.getenv("MAIL_SMTP_USER")     != null ? "✅ SET" : "❌ NOT SET"));
+        System.out.println("║ Env PASS:   " + (System.getenv("MAIL_SMTP_PASSWORD") != null ? "✅ SET" : "❌ NOT SET"));
+        System.out.println("╚════════════════════════════════════════╝\n");
+
         if (emailEnabled) {
             if (smtpUser == null || smtpUser.isEmpty() || smtpUser.contains("tu-email")) {
-                System.err.println("⚠️  ADVERTENCIA: Usuario SMTP no está configurado correctamente");
+                System.err.println("⚠️  ADVERTENCIA: MAIL_SMTP_USER no configurado");
                 this.emailEnabled = false;
             }
-            if (smtpPassword == null || smtpPassword.isEmpty() || smtpPassword.contains("contraseña")) {
-                System.err.println("⚠️  ADVERTENCIA: Contraseña SMTP no está configurada correctamente");
+            if (smtpPassword == null || smtpPassword.isEmpty()) {
+                System.err.println("⚠️  ADVERTENCIA: MAIL_SMTP_PASSWORD no configurado");
                 this.emailEnabled = false;
             }
         }
     }
 
+    /** Devuelve el último error ocurrido (útil para el servlet) */
+    public String getLastError() {
+        return lastError;
+    }
+
     public boolean sendEmail(String to, String subject, String body) {
-        System.out.println("\n--- INTENTO DE ENVÍO DE CORREO ---");
-        System.out.println("Para: " + to);
+        System.out.println("\n--- INTENTO DE ENVÍO ---");
+        System.out.println("Para:   " + to);
         System.out.println("Asunto: " + subject);
-        
+
         if (!emailEnabled) {
-            System.err.println("❌ EMAIL DESHABILITADO o sin credenciales configuradas");
-            return false;
-        }
-        
-        if (smtpUser == null || smtpUser.isEmpty()) {
-            System.err.println("❌ Usuario SMTP vacío");
-            return false;
-        }
-        
-        if (smtpPassword == null || smtpPassword.isEmpty()) {
-            System.err.println("❌ Contraseña SMTP vacía");
+            lastError = "Email deshabilitado o sin credenciales";
+            System.err.println("❌ " + lastError);
             return false;
         }
 
+        // Intento 1: puerto 465 SSL (más compatible con Render/cloud)
+        System.out.println("🔌 Intento 1: Puerto 465 SSL...");
+        if (trySend(to, subject, body, 465, true)) {
+            return true;
+        }
+        System.err.println("⚠️  Puerto 465 falló: " + lastError);
+
+        // Intento 2: puerto 587 STARTTLS (funciona en local)
+        System.out.println("🔌 Intento 2: Puerto 587 STARTTLS...");
+        if (trySend(to, subject, body, 587, false)) {
+            return true;
+        }
+        System.err.println("⚠️  Puerto 587 falló: " + lastError);
+
+        System.err.println("❌ TODOS LOS INTENTOS FALLARON");
+        return false;
+    }
+
+    /**
+     * Intenta enviar el correo con la configuración especificada.
+     * @param useSSL true = SSL en puerto 465, false = STARTTLS en puerto 587
+     */
+    private boolean trySend(String to, String subject, String body, int port, boolean useSSL) {
         try {
-            System.out.println("🔧 Configurando propiedades SMTP...");
-            Properties mailProps = new Properties();
-            mailProps.put("mail.smtp.host", smtpHost);
-            mailProps.put("mail.smtp.port", smtpPort);
-            mailProps.put("mail.smtp.auth", "true");
-            mailProps.put("mail.smtp.starttls.enable", "true");
-            mailProps.put("mail.smtp.starttls.required", "true");
-            mailProps.put("mail.smtp.ssl.trust", smtpHost);
-            mailProps.put("mail.smtp.ssl.protocols", "TLSv1.2");
-            mailProps.put("mail.smtp.connectiontimeout", "15000");
-            mailProps.put("mail.smtp.timeout", "15000");
-            mailProps.put("mail.smtp.writetimeout", "15000");
-            
-            System.out.println("🔗 Creando sesión SMTP...");
-            Session session = Session.getInstance(mailProps, new Authenticator() {
+            Properties props = new Properties();
+            props.put("mail.smtp.host", smtpHost);
+            props.put("mail.smtp.port", String.valueOf(port));
+            props.put("mail.smtp.auth", "true");
+            props.put("mail.smtp.connectiontimeout", "20000");
+            props.put("mail.smtp.timeout",           "20000");
+            props.put("mail.smtp.writetimeout",      "20000");
+
+            if (useSSL) {
+                // Puerto 465 – SSL/TLS directo
+                props.put("mail.smtp.ssl.enable",          "true");
+                props.put("mail.smtp.ssl.trust",           smtpHost);
+                props.put("mail.smtp.ssl.protocols",       "TLSv1.2");
+                props.put("mail.smtp.socketFactory.port",  String.valueOf(port));
+                props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+                props.put("mail.smtp.socketFactory.fallback", "false");
+            } else {
+                // Puerto 587 – STARTTLS
+                props.put("mail.smtp.starttls.enable",   "true");
+                props.put("mail.smtp.starttls.required", "true");
+                props.put("mail.smtp.ssl.trust",         smtpHost);
+                props.put("mail.smtp.ssl.protocols",     "TLSv1.2");
+            }
+
+            final String user = smtpUser;
+            final String pass = smtpPassword;
+
+            Session session = Session.getInstance(props, new Authenticator() {
                 @Override
                 protected PasswordAuthentication getPasswordAuthentication() {
-                    return new PasswordAuthentication(smtpUser, smtpPassword);
+                    return new PasswordAuthentication(user, pass);
                 }
             });
 
-            System.out.println("📝 Construyendo mensaje...");
             Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(smtpUser));
+            message.setFrom(new InternetAddress(user));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
             message.setSubject(subject);
             message.setContent(body, "text/html; charset=utf-8");
 
-            System.out.println("📤 Enviando correo...");
             Transport.send(message);
-            
-            System.out.println("✅ ÉXITO: Correo enviado a " + to);
+
+            System.out.println("✅ CORREO ENVIADO correctamente via puerto " + port);
+            lastError = "";
             return true;
 
         } catch (AuthenticationFailedException e) {
-            System.err.println("❌ ERROR DE AUTENTICACIÓN SMTP");
-            System.err.println("   Usuario: " + maskEmail(smtpUser));
-            System.err.println("   Causa: Usuario/Contraseña de aplicación incorrectos");
-            System.err.println("   Solución: Verifica la contraseña de aplicación de Google en myaccount.google.com/apppasswords");
-            e.printStackTrace(System.err);
-            return false;
+            lastError = "ERROR_AUTH (puerto " + port + "): " + e.getMessage();
+            System.err.println("❌ " + lastError);
+            System.err.println("   → Verifica la contraseña de aplicación de Google en myaccount.google.com/apppasswords");
         } catch (MessagingException e) {
-            String msg = e.getMessage() != null ? e.getMessage() : "sin detalle";
-            System.err.println("❌ ERROR AL ENVIAR SMTP: " + msg);
-            if (msg.contains("Connection refused") || msg.contains("connect timed out") || msg.contains("ConnectException")) {
-                System.err.println("   Causa: No se puede conectar a " + smtpHost + ":" + smtpPort);
-                System.err.println("   Solución: Verifica que el puerto 587 no esté bloqueado en Render");
-            } else if (msg.contains("Invalid") || msg.contains("invalid")) {
-                System.err.println("   Causa: Email inválido o datos incorrectos");
-            } else if (msg.contains("timeout") || msg.contains("Timeout")) {
-                System.err.println("   Causa: Tiempo de espera agotado al conectar con " + smtpHost);
+            lastError = "ERROR_SMTP (puerto " + port + "): " + e.getMessage();
+            System.err.println("❌ " + lastError);
+            // Imprimir causa raíz si existe
+            if (e.getCause() != null) {
+                System.err.println("   → Causa raíz: " + e.getCause().getClass().getSimpleName() + ": " + e.getCause().getMessage());
             }
-            e.printStackTrace(System.err);
-            return false;
         } catch (Exception e) {
-            System.err.println("❌ ERROR INESPERADO al enviar email: " + e.getClass().getName() + " - " + e.getMessage());
-            e.printStackTrace(System.err);
-            return false;
+            lastError = "ERROR_INESPERADO (puerto " + port + "): " + e.getClass().getSimpleName() + ": " + e.getMessage();
+            System.err.println("❌ " + lastError);
         }
+        return false;
     }
 
-    public boolean sendContactEmail(String nombre, String email, String telefono, 
+    public boolean sendContactEmail(String nombre, String email, String telefono,
                                     String asunto, String mensaje, String adminEmail) {
         String htmlBody = buildContactEmailHtml(nombre, email, telefono, asunto, mensaje);
-        String subject = "Nuevo contacto: " + asunto;
+        String subject  = "Nuevo contacto: " + asunto;
         return sendEmail(adminEmail, subject, htmlBody);
     }
 
     public boolean sendConfirmationEmail(String userEmail, String userName) {
         String htmlBody = buildConfirmationEmailHtml(userName);
-        String subject = "Confirmación de mensaje recibido";
+        String subject  = "Confirmación de mensaje recibido";
         return sendEmail(userEmail, subject, htmlBody);
     }
 
-    private String buildContactEmailHtml(String nombre, String email, String telefono, 
+    private String buildContactEmailHtml(String nombre, String email, String telefono,
                                          String asunto, String mensaje) {
-        return "<!DOCTYPE html>\n" +
-                "<html>\n" +
-                "<head>\n" +
-                "  <meta charset=\"UTF-8\">\n" +
-                "  <style>\n" +
-                "    body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; }\n" +
-                "    .container { max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n" +
-                "    .header { color: #333; border-bottom: 3px solid #007bff; padding-bottom: 15px; margin-bottom: 20px; }\n" +
-                "    .header h2 { margin: 0; color: #007bff; }\n" +
-                "    .field { margin: 12px 0; }\n" +
-                "    .label { font-weight: bold; color: #555; display: inline-block; width: 100px; }\n" +
-                "    .value { color: #333; }\n" +
-                "    .message-box { background-color: #f9f9f9; border-left: 4px solid #007bff; padding: 15px; margin-top: 20px; }\n" +
-                "    .footer { color: #999; font-size: 12px; margin-top: 20px; text-align: center; border-top: 1px solid #eee; padding-top: 15px; }\n" +
-                "  </style>\n" +
-                "</head>\n" +
-                "<body>\n" +
-                "  <div class=\"container\">\n" +
-                "    <div class=\"header\">\n" +
-                "      <h2>📧 Nuevo Contacto Recibido</h2>\n" +
-                "    </div>\n" +
-                "    <div class=\"field\"><span class=\"label\">Nombre:</span> <span class=\"value\">" + nombre + "</span></div>\n" +
-                "    <div class=\"field\"><span class=\"label\">Email:</span> <span class=\"value\"><a href=\"mailto:" + email + "\">" + email + "</a></span></div>\n" +
-                "    <div class=\"field\"><span class=\"label\">Teléfono:</span> <span class=\"value\">" + (telefono.isEmpty() ? "No proporcionado" : telefono) + "</span></div>\n" +
-                "    <div class=\"field\"><span class=\"label\">Asunto:</span> <span class=\"value\">" + asunto + "</span></div>\n" +
-                "    <div class=\"message-box\">\n" +
-                "      <strong>Mensaje:</strong><br><br>\n" +
-                "      " + mensaje.replace("\n", "<br>") + "\n" +
-                "    </div>\n" +
-                "    <div class=\"footer\">\n" +
-                "      <p>Este mensaje fue enviado desde el formulario de contacto de tu sitio web.</p>\n" +
-                "    </div>\n" +
-                "  </div>\n" +
-                "</body>\n" +
-                "</html>";
+        return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>" +
+                "body{font-family:Arial,sans-serif;background:#f5f5f5;padding:20px}" +
+                ".box{max-width:600px;margin:auto;background:#fff;padding:25px;border-radius:8px}" +
+                "h2{color:#007bff;border-bottom:3px solid #007bff;padding-bottom:10px}" +
+                ".lbl{font-weight:bold;color:#555}" +
+                ".msg{background:#f9f9f9;border-left:4px solid #007bff;padding:15px;margin-top:15px}" +
+                ".ft{color:#999;font-size:12px;text-align:center;margin-top:20px}" +
+                "</style></head><body><div class=\"box\">" +
+                "<h2>📧 Nuevo Contacto</h2>" +
+                "<p><span class=\"lbl\">Nombre:</span> " + nombre + "</p>" +
+                "<p><span class=\"lbl\">Email:</span> <a href=\"mailto:" + email + "\">" + email + "</a></p>" +
+                "<p><span class=\"lbl\">Teléfono:</span> " + (telefono.isEmpty() ? "No proporcionado" : telefono) + "</p>" +
+                "<p><span class=\"lbl\">Asunto:</span> " + asunto + "</p>" +
+                "<div class=\"msg\"><strong>Mensaje:</strong><br><br>" + mensaje.replace("\n", "<br>") + "</div>" +
+                "<div class=\"ft\">Enviado desde el formulario de contacto</div>" +
+                "</div></body></html>";
     }
 
     private String buildConfirmationEmailHtml(String userName) {
-        return "<!DOCTYPE html>\n" +
-                "<html>\n" +
-                "<head>\n" +
-                "  <meta charset=\"UTF-8\">\n" +
-                "  <style>\n" +
-                "    body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; }\n" +
-                "    .container { max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n" +
-                "    .header { color: #28a745; border-bottom: 3px solid #28a745; padding-bottom: 15px; margin-bottom: 20px; }\n" +
-                "    .header h2 { margin: 0; color: #28a745; }\n" +
-                "    .content { color: #333; line-height: 1.8; }\n" +
-                "    .footer { color: #999; font-size: 12px; margin-top: 20px; text-align: center; border-top: 1px solid #eee; padding-top: 15px; }\n" +
-                "  </style>\n" +
-                "</head>\n" +
-                "<body>\n" +
-                "  <div class=\"container\">\n" +
-                "    <div class=\"header\">\n" +
-                "      <h2>✅ ¡Gracias por Contactarnos!</h2>\n" +
-                "    </div>\n" +
-                "    <div class=\"content\">\n" +
-                "      <p>Hola " + userName + ",</p>\n" +
-                "      <p>Hemos recibido tu mensaje correctamente. Uno de nuestros profesionales se pondrá en contacto contigo pronto.</p>\n" +
-                "      <p>Esperamos poder ayudarte.</p>\n" +
-                "      <br>\n" +
-                "      <p>Saludos,<br><strong>El equipo de Rolfing</strong></p>\n" +
-                "    </div>\n" +
-                "    <div class=\"footer\">\n" +
-                "      <p>Este es un correo automático, por favor no respondas a esta dirección.</p>\n" +
-                "    </div>\n" +
-                "  </div>\n" +
-                "</body>\n" +
-                "</html>";
+        return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>" +
+                "body{font-family:Arial,sans-serif;background:#f5f5f5;padding:20px}" +
+                ".box{max-width:600px;margin:auto;background:#fff;padding:25px;border-radius:8px}" +
+                "h2{color:#28a745;border-bottom:3px solid #28a745;padding-bottom:10px}" +
+                "p{color:#333;line-height:1.8}" +
+                "</style></head><body><div class=\"box\">" +
+                "<h2>✅ ¡Gracias por Contactarnos!</h2>" +
+                "<p>Hola " + userName + ",</p>" +
+                "<p>Hemos recibido tu mensaje correctamente. Nos pondremos en contacto contigo pronto.</p>" +
+                "<p>Saludos,<br><strong>El equipo de Rolfing</strong></p>" +
+                "</div></body></html>";
     }
 
     private String maskEmail(String email) {
-        if (email == null || email.isEmpty()) {
-            return "No configurado";
-        }
-        if (email.length() <= 5) {
-            return "***";
-        }
+        if (email == null || email.isEmpty()) return "No configurado";
+        if (email.length() <= 5) return "***";
         return email.substring(0, 3) + "***" + email.substring(email.length() - 4);
     }
 
     private String formatBoolean(boolean value) {
-        return value ? "✅ Habilitado  " : "❌ Deshabilitado";
+        return value ? "✅ Habilitado" : "❌ Deshabilitado";
     }
 }
