@@ -15,7 +15,7 @@ COPY src/ ./src/
 # Dar permisos de ejecución a gradlew
 RUN chmod +x ./gradlew
 
-# Compilar
+# Compilar y crear fat JAR
 RUN ./gradlew clean build -x test
 
 # Etapa 2: Runtime - Usar imagen disponible de Eclipse Temurin (OpenJDK)
@@ -26,17 +26,17 @@ WORKDIR /app
 # Instalar bash para debugging (opcional)
 RUN apk add --no-cache bash curl
 
-# Copiar toda la carpeta de build (incluyendo libs)
-COPY --from=builder /app/build ./build
+# Copiar el Fat JAR (rolfing-app.jar con todas las dependencias)
+COPY --from=builder /app/build/libs/rolfing-app.jar .
 
-# Copiar los archivos web
+# Copiar los archivos web (por si se necesitan)
 COPY --from=builder /app/src/main/webapp ./src/main/webapp
 
-# Verificar que existe el archivo WAR
-RUN ls -lah build/libs/ || echo "ERROR: No se encontró build/libs"
+# Verificar que existe el JAR ejecutable
+RUN ls -lah *.jar || echo "ERROR: No se encontró el JAR ejecutable"
 
 # Puerto
 EXPOSE 8080
 
-# Comando para ejecutar - Usar la carpeta build completa
-CMD ["java", "-cp", "build/libs/rolfing.war:build/libs/*", "com.rolfing.server.JettyServer"]
+# Comando para ejecutar - Ejecutar directamente el Fat JAR
+CMD ["java", "-jar", "rolfing-app.jar"]

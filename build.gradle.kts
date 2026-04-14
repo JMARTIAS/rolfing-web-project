@@ -37,6 +37,37 @@ tasks.war {
     archiveFileName.set("rolfing.war")
 }
 
+// Crear un JAR ejecutable (Fat JAR) con todas las dependencias
+tasks.register<Jar>("fatJar") {
+    group = "build"
+    description = "Crea un JAR ejecutable con todas las dependencias"
+    archiveFileName.set("rolfing-app.jar")
+    
+    // Incluir archivos compilados
+    from(sourceSets["main"].output)
+    
+    // Incluir todas las dependencias
+    from(configurations.runtimeClasspath.get().map { 
+        if (it.isDirectory) it else zipTree(it) 
+    })
+    
+    // Configurar el manifest con la clase principal
+    manifest {
+        attributes("Main-Class" to "com.rolfing.server.JettyServer")
+        attributes("Implementation-Title" to "Rolfing Web Project")
+        attributes("Implementation-Version" to version)
+    }
+}
+
+// Evitar conflictos de duplicados
+tasks.getByName<Jar>("fatJar") {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.build {
+    dependsOn("fatJar")
+}
+
 // Crear una tarea customizada para ejecutar el servidor
 tasks.register<JavaExec>("runServer") {
     group = "application"
