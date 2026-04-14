@@ -69,21 +69,22 @@ public class EmailService {
             return false;
         }
 
-        // Intento 1: puerto 465 SSL (más compatible con Render/cloud)
+        // Intento 1: puerto 465 SSL (PRIMERO - Render bloquea 587)
         System.out.println("🔌 Intento 1: Puerto 465 SSL...");
         if (trySend(to, subject, body, 465, true)) {
             return true;
         }
         System.err.println("⚠️  Puerto 465 falló: " + lastError);
 
-        // Intento 2: puerto 587 STARTTLS (funciona en local)
+        // Intento 2: puerto 587 STARTTLS (fallback para local)
         System.out.println("🔌 Intento 2: Puerto 587 STARTTLS...");
         if (trySend(to, subject, body, 587, false)) {
             return true;
         }
         System.err.println("⚠️  Puerto 587 falló: " + lastError);
 
-        System.err.println("❌ TODOS LOS INTENTOS FALLARON");
+        System.err.println("❌ AMBOS PUERTOS BLOQUEADOS - El servidor probablemente bloquea conexiones SMTP salientes");
+        lastError = "Ambos puertos (465 y 587) están bloqueados en este servidor";
         return false;
     }
 
