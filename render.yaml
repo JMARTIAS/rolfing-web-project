@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: rolfing-web
+    env: java
+    plan: free
+    buildCommand: ./gradlew.bat clean build
+    startCommand: java -cp build/libs/rolfing.war:lib/* com.rolfing.server.JettyServer
+    envVars:
+      - key: PORT
+        value: 8080

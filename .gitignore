@@ -1,0 +1,45 @@
+# Gradle
+.gradle/
+build/
+*.gradle.lock
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+.env.local
+.env
+
+# Logs
+*.log
+logs/
+
+# Temp files
+.classpath
+.project
+.settings/
+bin/
+out/
+
+# Dependencies
+node_modules/
+yarn.lock
+package-lock.json
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
+dist/
+target/
