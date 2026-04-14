@@ -28,6 +28,12 @@ dependencies {
     implementation("javax.mail:javax.mail-api:1.6.2")
     implementation("com.sun.mail:javax.mail:1.6.2")
     
+    // SendGrid para emails via HTTP (alternativa a SMTP cuando está bloqueado)
+    implementation("com.sendgrid:sendgrid-java:4.10.1")
+    
+    // JSON processing para SendGrid
+    implementation("com.google.code.gson:gson:2.10.1")
+    
     // Testing
     testImplementation("junit:junit:4.13.2")
 }

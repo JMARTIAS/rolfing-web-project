@@ -7,8 +7,10 @@ import javax.mail.internet.MimeMessage;
 import java.util.Properties;
 
 /**
- * Servicio para enviar correos electrónicos vía SMTP.
- * Intenta primero con puerto 465 (SSL) y luego con 587 (STARTTLS) como fallback.
+ * Servicio para enviar correos electrónicos.
+ * Estrategia:
+ * 1. Si SendGrid está configurado (SENDGRID_API_KEY), usarlo (HTTP, no SMTP)
+ * 2. Sino, intentar SMTP (puerto 465 SSL, luego 587 STARTTLS)
  */
 public class EmailService {
 
@@ -18,9 +20,11 @@ public class EmailService {
     private boolean emailEnabled;
     private String lastError = "";
     private final ConfigManager config;
+    private SendGridEmailService sendGridService;
 
     public EmailService() {
         this.config = ConfigManager.getInstance();
+        this.sendGridService = new SendGridEmailService();
         loadConfiguration();
     }
 
@@ -58,10 +62,30 @@ public class EmailService {
         return lastError;
     }
 
+    public String getLastError() {
+        return lastError;
+    }
+
     public boolean sendEmail(String to, String subject, String body) {
         System.out.println("\n--- INTENTO DE ENVÍO ---");
         System.out.println("Para:   " + to);
         System.out.println("Asunto: " + subject);
+
+        // Estrategia 1: Si SendGrid está configurado, usarlo (funciona en Render)
+        if (sendGridService.isEnabled()) {
+            System.out.println("📧 ESTRATEGIA: SendGrid (HTTP)");
+            if (sendGridService.sendEmail(to, subject, body)) {
+                lastError = "";
+                return true;
+            } else {
+                lastError = sendGridService.getLastError();
+                System.err.println("⚠️  SendGrid falló: " + lastError);
+                return false;
+            }
+        }
+
+        // Estrategia 2: Si no está SendGrid, intentar SMTP
+        System.out.println("📧 ESTRATEGIA: SMTP (porta 465 y 587)");
 
         if (!emailEnabled) {
             lastError = "Email deshabilitado o sin credenciales";
@@ -69,22 +93,22 @@ public class EmailService {
             return false;
         }
 
-        // Intento 1: puerto 465 SSL (PRIMERO - Render bloquea 587)
+        // Intento 1: puerto 465 SSL
         System.out.println("🔌 Intento 1: Puerto 465 SSL...");
         if (trySend(to, subject, body, 465, true)) {
             return true;
         }
         System.err.println("⚠️  Puerto 465 falló: " + lastError);
 
-        // Intento 2: puerto 587 STARTTLS (fallback para local)
+        // Intento 2: puerto 587 STARTTLS
         System.out.println("🔌 Intento 2: Puerto 587 STARTTLS...");
         if (trySend(to, subject, body, 587, false)) {
             return true;
         }
         System.err.println("⚠️  Puerto 587 falló: " + lastError);
 
-        System.err.println("❌ AMBOS PUERTOS BLOQUEADOS - El servidor probablemente bloquea conexiones SMTP salientes");
-        lastError = "Ambos puertos (465 y 587) están bloqueados en este servidor";
+        System.err.println("❌ TODOS LOS MÉTODOS FALLARON");
+        lastError = "No se pudo enviar por SMTP ni SendGrid. Configura SENDGRID_API_KEY en Render.";
         return false;
     }
 
