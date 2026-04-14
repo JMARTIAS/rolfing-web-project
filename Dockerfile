@@ -1,6 +1,6 @@
 # Multi-stage build para Rolfing Web Project
 # Etapa 1: Compilar la aplicación
-FROM gradle:8.0-jdk11 AS builder
+FROM gradle:7.6-jdk11 AS builder
 
 WORKDIR /app
 
