@@ -12,6 +12,9 @@ COPY gradlew .
 COPY gradlew.bat .
 COPY src/ ./src/
 
+# Dar permisos de ejecución a gradlew
+RUN chmod +x ./gradlew
+
 # Compilar
 RUN ./gradlew clean build -x test
 
