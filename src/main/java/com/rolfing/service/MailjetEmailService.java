@@ -1,49 +1,57 @@
 package com.rolfing.service;
 
 import com.rolfing.config.ConfigManager;
-import com.sendgrid.SendGrid;
-import com.sendgrid.helpers.mail.Mail;
-import com.sendgrid.helpers.mail.Email;
-import com.sendgrid.helpers.mail.Content;
-import com.sendgrid.helpers.mail.Personalization;
-import com.sendgrid.http.Request;
-import com.sendgrid.http.Response;
-import com.sendgrid.Method;
+import com.mailjet.client.ClientOptions;
+import com.mailjet.client.MailjetClient;
+import com.mailjet.client.MailjetRequest;
+import com.mailjet.client.MailjetResponse;
+import com.mailjet.client.resource.Emailv31;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
- * Servicio de email usando SendGrid API (via HTTP)
- * Alternativa cuando SMTP está bloqueado (ej: Render free)
+ * Servicio de email usando Mailjet API (via HTTP REST)
+ * Completamente gratis: 200 emails/día, sin expiración, sin tarjeta de crédito necesaria
  */
-public class SendGridEmailService {
+public class MailjetEmailService {
 
-    private SendGrid sendGrid;
+    private MailjetClient mailjetClient;
     private String fromEmail;
+    private String fromName;
     private boolean enabled;
     private String lastError = "";
 
-    public SendGridEmailService() {
+    public MailjetEmailService() {
         loadConfiguration();
     }
 
     private void loadConfiguration() {
         ConfigManager config = ConfigManager.getInstance();
-        String apiKey = config.get("SENDGRID_API_KEY", "sendgrid.api.key", "");
-        this.fromEmail = config.get("SENDGRID_FROM_EMAIL", "sendgrid.from.email",
-                                    config.get("MAIL_SMTP_USER", "email.smtp.user", "noreply@rolfing.com"));
+        String apiKey = config.get("MAILJET_API_KEY", "mailjet.api.key", "");
+        String apiSecret = config.get("MAILJET_API_SECRET", "mailjet.api.secret", "");
 
-        if (apiKey != null && !apiKey.isEmpty()) {
-            this.sendGrid = new SendGrid(apiKey);
+        this.fromEmail = config.get("MAILJET_FROM_EMAIL", "mailjet.from.email",
+                                    config.get("MAIL_SMTP_USER", "email.smtp.user", "noreply@rolfing.com"));
+        this.fromName = "Rolfing Terapia";
+
+        if (apiKey != null && !apiKey.isEmpty() && apiSecret != null && !apiSecret.isEmpty()) {
+            ClientOptions options = ClientOptions.builder()
+                    .apiKey(apiKey)
+                    .apiSecretKey(apiSecret)
+                    .build();
+            this.mailjetClient = new MailjetClient(options);
             this.enabled = true;
         } else {
             this.enabled = false;
         }
 
         System.out.println("\n╔════════════════════════════════════════╗");
-        System.out.println("║   SENDGRID CONFIGURACIÓN CARGADA       ║");
+        System.out.println("║   MAILJET CONFIGURACIÓN CARGADA        ║");
         System.out.println("╠════════════════════════════════════════╣");
         System.out.println("║ Habilitado: " + (enabled ? "✅ SÍ" : "❌ NO"));
-        System.out.println("║ API Key:    " + (enabled ? maskApiKey(apiKey) : "no configurada"));
+        System.out.println("║ API Key:    " + (enabled ? maskKey(apiKey) : "no configurada"));
         System.out.println("║ From Email: " + fromEmail);
+        System.out.println("║ From Name:  " + fromName);
         System.out.println("╚════════════════════════════════════════╝\n");
     }
 
@@ -56,55 +64,48 @@ public class SendGridEmailService {
     }
 
     public boolean sendEmail(String to, String subject, String body) {
-        System.out.println("\n--- SENDGRID: INTENTO DE ENVÍO ---");
+        System.out.println("\n--- MAILJET: INTENTO DE ENVÍO ---");
         System.out.println("Para:   " + to);
         System.out.println("Asunto: " + subject);
 
         if (!enabled) {
-            lastError = "SendGrid no está configurado";
+            lastError = "Mailjet no está configurado (falta MAILJET_API_KEY o MAILJET_API_SECRET)";
             System.err.println("❌ " + lastError);
             return false;
         }
 
         try {
-            // Crear el correo
-            Mail mail = new Mail();
-            mail.setFrom(new Email(fromEmail, "Rolfing Terapia"));
+            System.out.println("🚀 Enviando via Mailjet API...");
 
-            // Agregar destinatario
-            Personalization personalization = new Personalization();
-            personalization.addTo(new Email(to));
-            personalization.setSubject(subject);
-            mail.addPersonalization(personalization);
+            MailjetRequest request = new MailjetRequest(Emailv31.resource)
+                    .property(Emailv31.MESSAGES, new JSONArray()
+                            .put(new JSONObject()
+                                    .put(Emailv31.Message.FROM, new JSONObject()
+                                            .put("Email", fromEmail)
+                                            .put("Name", fromName))
+                                    .put(Emailv31.Message.TO, new JSONArray()
+                                            .put(new JSONObject()
+                                                    .put("Email", to)))
+                                    .put(Emailv31.Message.SUBJECT, subject)
+                                    .put(Emailv31.Message.HTMLPART, body)
+                            ));
 
-            // Agregar contenido HTML
-            mail.addContent(new Content("text/html", body));
+            MailjetResponse response = mailjetClient.post(request);
 
-            // Configurar request
-            Request request = new Request();
-            request.setMethod(Method.POST);
-            request.setEndpoint("mail/send");
-            request.setBody(mail.build());
+            System.out.println("📨 Status Code: " + response.getStatus());
 
-            // Enviar
-            System.out.println("🚀 Enviando via SendGrid API...");
-            Response response = sendGrid.api(request);
-
-            int statusCode = response.getStatusCode();
-            System.out.println("📨 Status Code: " + statusCode);
-
-            if (statusCode >= 200 && statusCode < 300) {
-                System.out.println("✅ CORREO ENVIADO exitosamente via SendGrid");
+            if (response.getStatus() == 200) {
+                System.out.println("✅ CORREO ENVIADO exitosamente via Mailjet");
                 lastError = "";
                 return true;
             } else {
-                lastError = "SendGrid respondió con status " + statusCode + ": " + response.getBody();
+                lastError = "Mailjet respondió con status " + response.getStatus() + ": " + response.getData().toString();
                 System.err.println("❌ " + lastError);
                 return false;
             }
 
         } catch (Exception e) {
-            lastError = "Error SendGrid: " + e.getClass().getSimpleName() + " - " + e.getMessage();
+            lastError = "Error Mailjet: " + e.getClass().getSimpleName() + " - " + e.getMessage();
             System.err.println("❌ " + lastError);
             e.printStackTrace(System.err);
             return false;
@@ -195,8 +196,8 @@ public class SendGridEmailService {
                 "</html>";
     }
 
-    private String maskApiKey(String apiKey) {
-        if (apiKey == null || apiKey.length() < 10) return "***";
-        return apiKey.substring(0, 5) + "..." + apiKey.substring(apiKey.length() - 5);
+    private String maskKey(String key) {
+        if (key == null || key.length() < 10) return "***";
+        return key.substring(0, 5) + "..." + key.substring(key.length() - 5);
     }
 }

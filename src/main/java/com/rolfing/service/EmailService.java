@@ -9,7 +9,7 @@ import java.util.Properties;
 /**
  * Servicio para enviar correos electrónicos.
  * Estrategia:
- * 1. Si SendGrid está configurado (SENDGRID_API_KEY), usarlo (HTTP, no SMTP)
+ * 1. Si Mailjet está configurado (MAILJET_API_KEY + MAILJET_API_SECRET), usarlo (HTTP REST, gratis)
  * 2. Sino, intentar SMTP (puerto 465 SSL, luego 587 STARTTLS)
  */
 public class EmailService {
@@ -20,11 +20,11 @@ public class EmailService {
     private boolean emailEnabled;
     private String lastError = "";
     private final ConfigManager config;
-    private SendGridEmailService sendGridService;
+    private MailjetEmailService mailjetService;
 
     public EmailService() {
         this.config = ConfigManager.getInstance();
-        this.sendGridService = new SendGridEmailService();
+        this.mailjetService = new MailjetEmailService();
         loadConfiguration();
     }
 
@@ -71,21 +71,21 @@ public class EmailService {
         System.out.println("Para:   " + to);
         System.out.println("Asunto: " + subject);
 
-        // Estrategia 1: Si SendGrid está configurado, usarlo (funciona en Render)
-        if (sendGridService.isEnabled()) {
-            System.out.println("📧 ESTRATEGIA: SendGrid (HTTP)");
-            if (sendGridService.sendEmail(to, subject, body)) {
+        // Estrategia 1: Si Mailjet está configurado, usarlo (funciona en Render, gratis)
+        if (mailjetService.isEnabled()) {
+            System.out.println("📧 ESTRATEGIA: Mailjet (HTTP REST)");
+            if (mailjetService.sendEmail(to, subject, body)) {
                 lastError = "";
                 return true;
             } else {
-                lastError = sendGridService.getLastError();
-                System.err.println("⚠️  SendGrid falló: " + lastError);
+                lastError = mailjetService.getLastError();
+                System.err.println("⚠️  Mailjet falló: " + lastError);
                 return false;
             }
         }
 
-        // Estrategia 2: Si no está SendGrid, intentar SMTP
-        System.out.println("📧 ESTRATEGIA: SMTP (porta 465 y 587)");
+        // Estrategia 2: Si no está Mailjet, intentar SMTP
+        System.out.println("📧 ESTRATEGIA: SMTP (puerto 465 y 587)");
 
         if (!emailEnabled) {
             lastError = "Email deshabilitado o sin credenciales";
@@ -108,7 +108,7 @@ public class EmailService {
         System.err.println("⚠️  Puerto 587 falló: " + lastError);
 
         System.err.println("❌ TODOS LOS MÉTODOS FALLARON");
-        lastError = "No se pudo enviar por SMTP ni SendGrid. Configura SENDGRID_API_KEY en Render.";
+        lastError = "No se pudo enviar. Configura Mailjet (MAILJET_API_KEY + MAILJET_API_SECRET) en Render.";
         return false;
     }
 
