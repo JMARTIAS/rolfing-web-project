@@ -1,6 +1,9 @@
 package com.rolfing.servlet;
 
+import com.rolfing.service.EmailService;
+import com.rolfing.config.ConfigManager;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -12,16 +15,24 @@ import java.io.PrintWriter;
  * Servlet para manejar solicitudes de contacto desde el formulario
  */
 @WebServlet("/api/contact")
+@MultipartConfig
 public class ContactServlet extends HttpServlet {
     
     private static final long serialVersionUID = 1L;
+    private EmailService emailService;
+    
+    @Override
+    public void init() throws ServletException {
+        super.init();
+        this.emailService = new EmailService();
+    }
 
     /**
      * Maneja solicitudes GET
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
+            throws IOException {
         response.setContentType("application/json;charset=UTF-8");
         response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
         
@@ -35,7 +46,7 @@ public class ContactServlet extends HttpServlet {
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
+            throws IOException {
         response.setContentType("application/json;charset=UTF-8");
         
         try {
@@ -66,28 +77,54 @@ public class ContactServlet extends HttpServlet {
                 }
                 return;
             }
+            
+            // Sanitizar entrada
+            nombre = sanitizeInput(nombre);
+            asunto = sanitizeInput(asunto != null ? asunto : "Sin asunto");
+            telefono = sanitizeInput(telefono != null ? telefono : "");
+            mensaje = sanitizeInput(mensaje);
 
-            // Aquí iría la lógica para guardar el mensaje en base de datos
-            // o enviar un email (requiere configuración adicional)
-            System.out.println("Nuevo contacto recibido:");
-            System.out.println("  Nombre: " + nombre);
-            System.out.println("  Email: " + email);
-            System.out.println("  Teléfono: " + telefono);
-            System.out.println("  Asunto: " + asunto);
-            System.out.println("  Mensaje: " + mensaje);
+            // Obtener email del administrador desde configuración
+            String adminEmail = getAdminEmail();
+            
+            // Log de recepción
+            System.out.println("\n╔════════════════════════════════════════════════════════╗");
+            System.out.println("║            NUEVO CONTACTO RECIBIDO                      ║");
+            System.out.println("╠════════════════════════════════════════════════════════╣");
+            System.out.println("║ Nombre:      " + String.format("%-40s", nombre) + " ║");
+            System.out.println("║ Email:       " + String.format("%-40s", email) + " ║");
+            System.out.println("║ Teléfono:    " + String.format("%-40s", telefono) + " ║");
+            System.out.println("║ Asunto:      " + String.format("%-40s", asunto) + " ║");
+            System.out.println("║ Admin:       " + String.format("%-40s", adminEmail) + " ║");
+            System.out.println("╚════════════════════════════════════════════════════════╝\n");
+            
+            // Enviar emails
+            boolean emailSentToAdmin = emailService.sendContactEmail(nombre, email, telefono, asunto, mensaje, adminEmail);
+            boolean emailSentToUser = emailService.sendConfirmationEmail(email, nombre);
 
             // Responder con éxito
             response.setStatus(HttpServletResponse.SC_OK);
             try (PrintWriter out = response.getWriter()) {
-                out.println("{\"success\": true, \"message\": \"Mensaje enviado exitosamente.\"}");
+                StringBuilder response_msg = new StringBuilder("{\"success\": true, \"message\": \"Mensaje recibido exitosamente.");
+                
+                if (!emailSentToAdmin && !emailSentToUser) {
+                    response_msg.append(" (Nota: Los emails no pudieron ser enviados, pero tu mensaje fue registrado.)\"}");
+                } else if (!emailSentToAdmin || !emailSentToUser) {
+                    response_msg.append(" (Parcial: Algunos emails fallaron, revisa los logs.)\"}");
+                } else {
+                    response_msg.append("\"}");
+                }
+                
+                out.println(response_msg);
             }
 
         } catch (Exception e) {
+            System.err.println("Error al procesar contacto: " + e.getMessage());
+            e.printStackTrace(System.err);
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             try (PrintWriter out = response.getWriter()) {
                 out.println("{\"success\": false, \"message\": \"Error al procesar la solicitud.\"}");
             }
-            e.printStackTrace();
         }
     }
 
@@ -97,5 +134,29 @@ public class ContactServlet extends HttpServlet {
     private boolean isValidEmail(String email) {
         String emailRegex = "^[A-Za-z0-9+_.-]+@(.+)$";
         return email.matches(emailRegex);
+    }
+    
+    /**
+     * Sanitiza la entrada para prevenir inyecciones HTML
+     */
+    private String sanitizeInput(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#x27;")
+                .trim();
+    }
+    
+    /**
+     * Obtiene el email del administrador desde la configuración
+     */
+    private String getAdminEmail() {
+        ConfigManager config = ConfigManager.getInstance();
+        return config.get("BUSINESS_EMAIL", "contact.email", "info@rolfing.com");
     }
 }

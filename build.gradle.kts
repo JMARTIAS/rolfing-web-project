@@ -18,11 +18,15 @@ dependencies {
     implementation("org.slf4j:slf4j-api:2.0.5")
     implementation("ch.qos.logback:logback-classic:1.4.6")
     
-    // Jetty para ejecutar como servidor embebido
-    implementation("org.eclipse.jetty:jetty-server:11.0.15")
-    implementation("org.eclipse.jetty:jetty-servlet:11.0.15")
-    implementation("org.eclipse.jetty:jetty-webapp:11.0.15")
-    implementation("org.eclipse.jetty:jetty-util:11.0.15")
+    // Jetty 10 para ejecutar como servidor embebido (compatible con javax.servlet)
+    implementation("org.eclipse.jetty:jetty-server:10.0.20")
+    implementation("org.eclipse.jetty:jetty-servlet:10.0.20")
+    implementation("org.eclipse.jetty:jetty-webapp:10.0.20")
+    implementation("org.eclipse.jetty:jetty-util:10.0.20")
+    
+    // JavaMail API para envío de correos
+    implementation("javax.mail:javax.mail-api:1.6.2")
+    implementation("com.sun.mail:javax.mail:1.6.2")
     
     // Testing
     testImplementation("junit:junit:4.13.2")

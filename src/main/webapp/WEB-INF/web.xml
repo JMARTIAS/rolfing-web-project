@@ -2,10 +2,22 @@
 <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
-         version="4.0">
+         version="4.0"
+         metadata-complete="false">
     
     <display-name>Rolfing Terapia - Sitio Web</display-name>
     <description>Aplicación web para promoción de servicios de Rolfing</description>
+    
+    <!-- Servlet de Contacto -->
+    <servlet>
+        <servlet-name>ContactServlet</servlet-name>
+        <servlet-class>com.rolfing.servlet.ContactServlet</servlet-class>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>ContactServlet</servlet-name>
+        <url-pattern>/api/contact</url-pattern>
+    </servlet-mapping>
     
     <!-- Session Configuration -->
     <session-config>

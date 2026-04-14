@@ -435,7 +435,7 @@
                                     <label for="mensaje" class="form-label">Mensaje</label>
                                     <textarea class="form-control" id="mensaje" name="mensaje" rows="5" required></textarea>
                                 </div>
-                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <button type="button" class="btn btn-primary btn-lg w-100" id="contactSubmitBtn">
                                     <i class="fas fa-paper-plane"></i> Enviar Mensaje
                                 </button>
                             </form>
@@ -504,7 +504,110 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JS -->
+    <!-- Manejador de Formulario de Contacto (Inline) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOMContentLoaded - Inicializando formulario de contacto');
+            
+            const contactForm = document.getElementById('contactForm');
+            const submitBtn = document.getElementById('contactSubmitBtn');
+            
+            if (!contactForm || !submitBtn) {
+                console.error('❌ Formulario o botón no encontrado');
+                return;
+            }
+            
+            console.log('✅ Formulario y botón encontrados');
+            
+            // Manejador del botón (no submit)
+            submitBtn.addEventListener('click', function(e) {
+                console.log('🖱️ Click en botón detectado');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Obtener valores
+                const nombre = document.getElementById('nombre').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const telefono = document.getElementById('telefono').value.trim();
+                const asunto = document.getElementById('asunto').value.trim();
+                const mensaje = document.getElementById('mensaje').value.trim();
+                
+                console.log('📋 Datos:', {nombre, email, asunto});
+                
+                // Validar
+                if (!nombre || !email || !mensaje) {
+                    alert('Por favor completa: Nombre, Email y Mensaje');
+                    return;
+                }
+                
+                // Validar email simple
+                if (!email.includes('@')) {
+                    alert('Email inválido');
+                    return;
+                }
+                
+                // Desactivar botón
+                submitBtn.disabled = true;
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+                
+                // Preparar datos como URL-encoded (application/x-www-form-urlencoded)
+                const params = new URLSearchParams();
+                params.append('nombre', nombre);
+                params.append('email', email);
+                params.append('telefono', telefono);
+                params.append('asunto', asunto);
+                params.append('mensaje', mensaje);
+                
+                // URL del API
+                const apiUrl = '/rolfing/api/contact';
+                console.log('📤 POST a:', apiUrl);
+                
+                // Enviar
+                fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: params.toString()
+                })
+                .then(response => {
+                    console.log('📥 Status:', response.status);
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('✅ Respuesta:', data);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    
+                    if (data.success) {
+                        alert('✅ ¡Mensaje enviado exitosamente!\nNos pondremos en contacto pronto.');
+                        contactForm.reset();
+                    } else {
+                        alert('❌ Error: ' + (data.message || 'Desconocido'));
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Error:', error);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    alert('❌ Error de conexión:\n' + error.message);
+                });
+            });
+            
+            // Prevenir submit del formulario
+            contactForm.addEventListener('submit', function(e) {
+                console.log('⚠️ Submit del formulario prevenido');
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            });
+        });
+    </script>
+    <!-- Custom JS para otras funcionalidades -->
     <script src="js/script.js"></script>
 </body>
 </html>

@@ -47,14 +47,10 @@ function initializeEventListeners() {
         }
     });
 
-    // Contact Form Handler
-    const contactForm = document.getElementById('contactForm');
-    if (contactForm) {
-        contactForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleFormSubmit(this);
-        });
-    }
+    // Contact Form Handler - DESHABILITADO
+    // El formulario es manejado por el script inline en index.html
+    // para evitar conflictos entre múltiples handlers
+    console.log('✅ Script cargado (formulario manejado por inline script en index.html)');
 }
 
 // ===================================
@@ -115,14 +111,15 @@ function initializeScrollAnimations() {
 // ===================================
 
 function initializeFormValidation() {
-    const forms = document.querySelectorAll('form');
+    // La validación del formulario de contacto se maneja en handleFormSubmit
+    // Evitar validación de Bootstrap que interfiere con fetch
+    const forms = document.querySelectorAll('form:not(#contactForm)');
     
     forms.forEach(form => {
         form.addEventListener('submit', function(e) {
-            if (!form.checkValidity()) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
+            // Siempre prevenir submit nativo - el contactForm usa fetch, el resto no hace nada
+            e.preventDefault();
+            e.stopPropagation();
             form.classList.add('was-validated');
         }, false);
     });
@@ -133,6 +130,8 @@ function handleFormSubmit(form) {
     const nombre = form.querySelector('#nombre').value.trim();
     const email = form.querySelector('#email').value.trim();
     const mensaje = form.querySelector('#mensaje').value.trim();
+    const asunto = form.querySelector('#asunto') ? form.querySelector('#asunto').value.trim() : '';
+    const telefono = form.querySelector('#telefono') ? form.querySelector('#telefono').value.trim() : '';
 
     if (!nombre || !email || !mensaje) {
         showAlert('Por favor completa todos los campos requeridos.', 'warning');
@@ -145,24 +144,58 @@ function handleFormSubmit(form) {
         return;
     }
 
-    // Simulación de envío (en una aplicación real, esto sería una llamada AJAX)
+    // Deshabilitar botón
     const submitBtn = form.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
-    // Simular delay de envío
-    setTimeout(() => {
+    // Preparar datos del formulario
+    const formData = new FormData();
+    formData.append('nombre', nombre);
+    formData.append('email', email);
+    formData.append('telefono', telefono);
+    formData.append('asunto', asunto);
+    formData.append('mensaje', mensaje);
+
+    // Construir URL correcta del API
+    const currentPath = window.location.pathname;
+    let apiUrl = '/api/contact';
+    
+    // Si estamos en /rolfing o subsecuente, usar la ruta con /rolfing
+    if (currentPath.includes('/rolfing')) {
+        apiUrl = '/rolfing/api/contact';
+    }
+    
+    console.log('📤 Enviando a:', apiUrl);
+    console.log('📍 Ubicación actual:', window.location.href);
+    
+    // Enviar a través de fetch
+    fetch(apiUrl, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
         
-        // Mostrar confirmación
-        showAlert('¡Mensaje enviado exitosamente! Nos pondremos en contacto pronto.', 'success');
-        
-        // Limpiar formulario
-        form.reset();
-        form.classList.remove('was-validated');
-    }, 1500);
+        if (data.success) {
+            showAlert('¡Mensaje enviado exitosamente! Nos pondremos en contacto pronto.', 'success');
+            form.reset();
+            form.classList.remove('was-validated');
+        } else {
+            showAlert(data.message || 'Error al enviar el mensaje.', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('❌ Error de conexión:', error);
+        console.error('📍 URL intentada:', apiUrl);
+        console.error('🔍 Detalles:', error.message);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+        showAlert('Error de conexión: ' + error.message, 'danger');
+    });
 }
 
 function isValidEmail(email) {
@@ -241,8 +274,4 @@ function addClassOnScroll(selector, className) {
 
 // ===================================
 // INICIALIZACIÓN EN CARGA
-// ===================================
-
-window.addEventListener('load', function() {
-    console.log('Rolfing Web Project - Loaded Successfully');
-});
+// ===
