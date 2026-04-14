@@ -62,10 +62,6 @@ public class EmailService {
         return lastError;
     }
 
-    public String getLastError() {
-        return lastError;
-    }
-
     public boolean sendEmail(String to, String subject, String body) {
         System.out.println("\n--- INTENTO DE ENVÍO ---");
         System.out.println("Para:   " + to);
