@@ -95,12 +95,16 @@ public class ContactServlet extends HttpServlet {
             System.out.println("║ Email:       " + String.format("%-40s", email) + " ║");
             System.out.println("║ Teléfono:    " + String.format("%-40s", telefono) + " ║");
             System.out.println("║ Asunto:      " + String.format("%-40s", asunto) + " ║");
-            System.out.println("║ Admin:       " + String.format("%-40s", adminEmail) + " ║");
+            System.out.println("║ Admin Email: " + String.format("%-40s", adminEmail) + " ║");
             System.out.println("╚════════════════════════════════════════════════════════╝\n");
             
             // Enviar emails
+            System.out.println("📤 Intentando enviar emails...");
             boolean emailSentToAdmin = emailService.sendContactEmail(nombre, email, telefono, asunto, mensaje, adminEmail);
+            System.out.println("   → Correo al admin: " + (emailSentToAdmin ? "✅ ENVIADO" : "❌ FALLÓ"));
+            
             boolean emailSentToUser = emailService.sendConfirmationEmail(email, nombre);
+            System.out.println("   → Confirmación al usuario: " + (emailSentToUser ? "✅ ENVIADA" : "❌ FALLÓ"));
 
             // Responder con éxito
             response.setStatus(HttpServletResponse.SC_OK);

@@ -31,6 +31,10 @@ public class EmailService {
         this.smtpPassword = config.get("MAIL_SMTP_PASSWORD", "email.smtp.password", "");
         this.emailEnabled = config.getBoolean("email.enabled", true);
         
+        System.out.println("\n📋 DEBUG: Fuentes de configuración");
+        System.out.println("   MAIL_SMTP_USER env: " + (System.getenv("MAIL_SMTP_USER") != null ? "✅ SET" : "❌ NOT SET"));
+        System.out.println("   MAIL_SMTP_PASSWORD env: " + (System.getenv("MAIL_SMTP_PASSWORD") != null ? "✅ SET" : "❌ NOT SET"));
+        
         System.out.println("\n╔════════════════════════════════════════════════════════╗");
         System.out.println("║          CONFIGURACIÓN DE EMAIL CARGADA                  ║");
         System.out.println("╠════════════════════════════════════════════════════════╣");
