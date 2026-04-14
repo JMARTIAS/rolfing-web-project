@@ -23,14 +23,20 @@ FROM eclipse-temurin:11-jre-alpine
 
 WORKDIR /app
 
-# Copiar el WAR compilado desde la etapa anterior
-COPY --from=builder /app/build/libs/rolfing.war .
+# Instalar bash para debugging (opcional)
+RUN apk add --no-cache bash curl
+
+# Copiar toda la carpeta de build (incluyendo libs)
+COPY --from=builder /app/build ./build
 
 # Copiar los archivos web
 COPY --from=builder /app/src/main/webapp ./src/main/webapp
 
+# Verificar que existe el archivo WAR
+RUN ls -lah build/libs/ || echo "ERROR: No se encontró build/libs"
+
 # Puerto
 EXPOSE 8080
 
-# Comando para ejecutar
-CMD ["java", "-cp", "rolfing.war", "com.rolfing.server.JettyServer"]
+# Comando para ejecutar - Usar la carpeta build completa
+CMD ["java", "-cp", "build/libs/rolfing.war:build/libs/*", "com.rolfing.server.JettyServer"]
