@@ -8,22 +8,10 @@
     <display-name>Rolfing Terapia - Sitio Web</display-name>
     <description>Aplicación web para promoción de servicios de Rolfing</description>
     
-    <!-- CORS Filter para permitir embebidos de YouTube -->
+    <!-- CORS Filter personalizado para Jetty -->
     <filter>
         <filter-name>CORSFilter</filter-name>
-        <filter-class>org.apache.catalina.filters.CorsFilter</filter-class>
-        <init-param>
-            <param-name>cors.allowed.origins</param-name>
-            <param-value>*</param-value>
-        </init-param>
-        <init-param>
-            <param-name>cors.allowed.methods</param-name>
-            <param-value>GET,POST,PUT,DELETE,OPTIONS</param-value>
-        </init-param>
-        <init-param>
-            <param-name>cors.allowed.headers</param-name>
-            <param-value>*</param-value>
-        </init-param>
+        <filter-class>com.rolfing.servlet.CORSFilter</filter-class>
     </filter>
     
     <filter-mapping>
