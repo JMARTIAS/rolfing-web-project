@@ -144,38 +144,72 @@ p {
 }
 
 /* ===================================
-   HERO SECTION - MEJORADA Y COLORIDA CON FONDO DASHBOARD
+   DASHBOARD BANNER - IMAGEN PRINCIPAL
    =================================== */
-.hero-section {
-    background-image: url('../img/dashboard.jpg');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    background-repeat: no-repeat;
-    min-height: 100vh;
+.dashboard-banner {
+    width: 100%;
+    height: auto;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 60px 20px;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    background: white;
+}
+
+.banner-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    max-width: 100%;
+    object-fit: cover;
+    animation: fadeInDown 0.8s ease forwards;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===================================
+   HERO SECTION - CONTENIDO INTEGRACIÓN ESTRUCTURAL
+   =================================== */
+.hero-content {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fbfc 50%, #fef9f3 100%);
+    padding: 80px 0;
     position: relative;
     overflow: hidden;
 }
 
-/* Overlay para mejorar legibilidad del texto sobre la imagen */
-.hero-section::before {
+.hero-content::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(180deg, rgba(26,127,142,.08) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+.hero-content::after {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    bottom: 0;
-    background: linear-gradient(180deg, rgba(232,246,248,.75) 0%, rgba(240,250,251,.85) 50%, rgba(246,249,253,.9) 100%);
-    z-index: 1;
-    pointer-events: none;
+    height: 3px;
+    background: linear-gradient(90deg, #1a7f8e 0%, #40a696 50%, #ffb347 100%);
 }
 
-.hero-section > * {
+.hero-content > .container {
     position: relative;
     z-index: 2;
 }
@@ -253,26 +287,29 @@ p {
 
 .hero-title {
     font-family: 'Lora', serif;
-    font-size: clamp(2rem, 4.5vw, 3.2rem);
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
     font-weight: 700;
     line-height: 1.2;
     color: var(--text-dark);
     margin-bottom: 1.5rem;
     letter-spacing: -0.6px;
-    background: linear-gradient(135deg, #1a2332, #1a7f8e);
+    background: linear-gradient(135deg, #1a2332, #1a7f8e, #40a696);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     text-align: center;
+    animation: fadeInUp 0.6s ease forwards;
 }
 
 .hero-subtitle {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     color: var(--text-mid);
     margin-bottom: 2.5rem;
     font-weight: 400;
     line-height: 1.8;
     text-align: center;
+    animation: fadeInUp 0.6s ease 0.1s forwards;
+    animation-fill-mode: both;
 }
 
 .btn-primary,
