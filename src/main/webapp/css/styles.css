@@ -144,18 +144,17 @@ p {
 }
 
 /* ===================================
-   DASHBOARD BANNER - IMAGEN PRINCIPAL
+   DASHBOARD BANNER - IMAGEN PRINCIPAL RESPONSIVA
    =================================== */
 .dashboard-banner {
     width: 100%;
     height: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
     padding: 0;
     margin: 0;
-    overflow: hidden;
+    overflow: visible;
     background: white;
+    line-height: 0; /* Elimina espacios en blanco debajo de img */
 }
 
 .banner-image {
@@ -163,8 +162,40 @@ p {
     height: auto;
     display: block;
     max-width: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
     animation: fadeInDown 0.8s ease forwards;
+    /* Responsive para diferentes ratios de pantalla */
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Asegurar que la imagen se vea bien en pantallas ultrawide (21:9) */
+@media (min-aspect-ratio: 21/9) {
+    .banner-image {
+        max-height: 60vh;
+        width: 100%;
+        object-fit: contain;
+    }
+}
+
+/* Pantallas normales */
+@media (max-aspect-ratio: 21/9) {
+    .banner-image {
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+    }
+}
+
+/* Tablet y mobile */
+@media (max-width: 768px) {
+    .banner-image {
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+    }
 }
 
 @keyframes fadeInDown {
