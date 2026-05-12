@@ -144,17 +144,40 @@ p {
 }
 
 /* ===================================
-   HERO SECTION - MEJORADA Y COLORIDA
+   HERO SECTION - MEJORADA Y COLORIDA CON FONDO DASHBOARD
    =================================== */
 .hero-section {
-    background: linear-gradient(135deg, #e8f6f8 0%, #f0fafb 30%, #fef9f3 60%, #e6f5f0 100%);
-    min-height: auto;
+    background-image: url('../img/dashboard.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    min-height: 100vh;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 60px 0;
+    padding: 60px 20px;
     position: relative;
     overflow: hidden;
+}
+
+/* Overlay para mejorar legibilidad del texto sobre la imagen */
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(232,246,248,.75) 0%, rgba(240,250,251,.85) 50%, rgba(246,249,253,.9) 100%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.hero-section > * {
+    position: relative;
+    z-index: 2;
 }
 
 /* Patrón decorativo con círculos */
@@ -202,35 +225,7 @@ p {
     50% { opacity: 0.8; }
 }
 
-/* Dashboard Image Styling */
-.dashboard-container {
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto 3rem;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: fadeInUp 0.8s ease forwards;
-}
-
-.dashboard-image {
-    width: 100%;
-    height: auto;
-    max-width: 900px;
-    border-radius: var(--radius-lg);
-    box-shadow: 0 25px 60px rgba(26,127,142,.2);
-    border: 3px solid white;
-    transition: var(--transition);
-    filter: brightness(1.05) contrast(1.1) saturate(1.1);
-}
-
-.dashboard-image:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 35px 80px rgba(26,127,142,.3);
-    filter: brightness(1.08) contrast(1.12) saturate(1.15);
-}
-
+/* Hero Image Container */
 .hero-image-container {
     width: 100%;
     max-width: 450px;
