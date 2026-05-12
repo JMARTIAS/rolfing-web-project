@@ -187,8 +187,9 @@ p {
 /* Tablet y mobile */
 @media (max-width: 768px) {
     .dashboard-banner {
-        width: 100vw;
-        margin: 0 calc(-50vw + 50%);
+        width: 100%;
+        margin: 0;
+        padding: 0;
     }
     
     .banner-image {
