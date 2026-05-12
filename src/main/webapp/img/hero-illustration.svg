@@ -1,0 +1,92 @@
+<svg viewBox="0 0 600 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a7f8e;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#40a696;stop-opacity:0.1" />
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a7f8e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#40a696;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#40a696;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6b9f8f;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  
+  <!-- Fondo decorativo -->
+  <circle cx="150" cy="100" r="120" fill="url(#grad1)" opacity="0.6"/>
+  <circle cx="500" cy="350" r="100" fill="url(#grad1)" opacity="0.5"/>
+  <circle cx="450" cy="80" r="80" fill="url(#grad1)" opacity="0.4"/>
+  
+  <!-- Cuerpo principal - Figura meditativa -->
+  <g id="persona" filter="url(#shadow)">
+    <!-- Cabeza -->
+    <circle cx="300" cy="120" r="35" fill="url(#grad2)"/>
+    
+    <!-- Cuello -->
+    <rect x="285" y="155" width="30" height="25" fill="url(#grad2)" rx="5"/>
+    
+    <!-- Hombros y pecho -->
+    <ellipse cx="300" cy="220" rx="50" ry="45" fill="url(#grad2)"/>
+    
+    <!-- Brazos abiertos en meditación -->
+    <g id="brazo-izq">
+      <path d="M 250 200 Q 200 180 160 220" stroke="url(#grad2)" stroke-width="12" fill="none" stroke-linecap="round"/>
+      <circle cx="160" cy="220" r="15" fill="url(#grad2)"/>
+    </g>
+    
+    <g id="brazo-der">
+      <path d="M 350 200 Q 400 180 440 220" stroke="url(#grad2)" stroke-width="12" fill="none" stroke-linecap="round"/>
+      <circle cx="440" cy="220" r="15" fill="url(#grad2)"/>
+    </g>
+    
+    <!-- Torso superior -->
+    <ellipse cx="300" cy="280" rx="45" ry="55" fill="url(#grad3)"/>
+    
+    <!-- Piernas en posición meditativa -->
+    <g id="pierna-izq">
+      <ellipse cx="270" cy="370" rx="25" ry="50" fill="url(#grad3)" transform="rotate(-25 270 370)"/>
+      <ellipse cx="250" cy="430" rx="20" ry="30" fill="url(#grad2)" transform="rotate(-25 250 430)"/>
+    </g>
+    
+    <g id="pierna-der">
+      <ellipse cx="330" cy="370" rx="25" ry="50" fill="url(#grad3)" transform="rotate(25 330 370)"/>
+      <ellipse cx="350" cy="430" rx="20" ry="30" fill="url(#grad2)" transform="rotate(25 350 430)"/>
+    </g>
+  </g>
+  
+  <!-- Elemento decorativo - Espiral de energía -->
+  <g id="energia" opacity="0.7">
+    <!-- Espiral izquierda -->
+    <path d="M 150 150 Q 120 130 110 160 Q 100 190 130 210 Q 160 230 180 200" 
+          stroke="#40a696" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle cx="150" cy="150" r="4" fill="#40a696"/>
+    
+    <!-- Espiral derecha -->
+    <path d="M 450 150 Q 480 130 490 160 Q 500 190 470 210 Q 440 230 420 200" 
+          stroke="#1a7f8e" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle cx="450" cy="150" r="4" fill="#1a7f8e"/>
+  </g>
+  
+  <!-- Líneas de movimiento - Representan el flujo -->
+  <g id="flujo" opacity="0.5">
+    <path d="M 200 250 Q 250 220 300 250" stroke="url(#grad3)" stroke-width="2" fill="none" stroke-dasharray="5,5"/>
+    <path d="M 300 250 Q 350 220 400 250" stroke="url(#grad2)" stroke-width="2" fill="none" stroke-dasharray="5,5"/>
+  </g>
+  
+  <!-- Puntos de energía -->
+  <g id="chakras" opacity="0.8">
+    <circle cx="300" cy="120" r="8" fill="none" stroke="#40a696" stroke-width="2"/>
+    <circle cx="300" cy="220" r="10" fill="none" stroke="#1a7f8e" stroke-width="2"/>
+    <circle cx="300" cy="300" r="9" fill="none" stroke="#40a696" stroke-width="2"/>
+  </g>
+  
+  <!-- Texto complementario invisible para accesibilidad -->
+  <text x="300" y="480" text-anchor="middle" font-size="16" fill="#1a7f8e" opacity="0">
+    Integración Estructural - Rolfing
+  </text>
+</svg>

@@ -86,11 +86,17 @@ p {
    NAVBAR - DISEÑO PREMIUM
    =================================== */
 .navbar {
-    background: linear-gradient(90deg, #ffffff 0%, #f8fbfc 100%) !important;
-    box-shadow: 0 4px 20px rgba(26,127,142,.08);
+    background: linear-gradient(90deg, #ffffff 0%, #f8fbfc 50%, #fef9f3 100%) !important;
+    box-shadow: 0 6px 25px rgba(26,127,142,.12);
     padding: 1rem 0;
     transition: var(--transition);
-    border-bottom: 2px solid rgba(64,166,150,.15);
+    border-bottom: 3px solid;
+    border-image: linear-gradient(90deg, #1a7f8e, #40a696, #ffb347) 1;
+    backdrop-filter: blur(10px);
+}
+
+.navbar.scrolled {
+    box-shadow: 0 8px 35px rgba(26,127,142,.15);
 }
 
 .navbar-brand {
@@ -193,6 +199,31 @@ p {
 @keyframes pulse-slow {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.8; }
+}
+
+.hero-image-container {
+    width: 100%;
+    max-width: 450px;
+    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+    animation: float 6s ease-in-out infinite;
+}
+
+.hero-illustration {
+    width: 100%;
+    height: auto;
+    max-width: 400px;
+    filter: drop-shadow(0 15px 40px rgba(26,127,142,.2));
+    transition: var(--transition);
+}
+
+.hero-illustration:hover {
+    filter: drop-shadow(0 20px 50px rgba(64,166,150,.25));
+    transform: scale(1.02);
 }
 
 .hero-title {
